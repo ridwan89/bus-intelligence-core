@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Intelligence Core - Kabin Kontrol</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Basic Reset & Body Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        /* Navbar/Header */
+        .navbar {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .navbar .bus-id-display {
+            font-size: 18px;
+            font-weight: normal;
+            margin-left: 20px;
+            color: #bdc3c7;
+        }
+        .navbar .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 25px;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+        .navbar .nav-links a:hover {
+            color: #3498db;
+        }
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .navbar .user-info .notification-icon {
+            position: relative;
+            margin-right: 20px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .navbar .user-info .notification-count {
+            position: absolute;
+            top: -5px;
+            right: -8px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 3px 7px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .navbar .user-info .avatar {
+            width: 35px;
+            height: 35px;
+            background-color: #3498db;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        /* Main Content Area */
+        .container {
+            padding: 25px;
+            max-width: 900px; /* Reduced max-width for single bus focus */
+            margin: 20px auto;
+        }
+
+        /* Sensor Information Widgets */
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Adjusted for fewer columns */
+            gap: 25px;
+        }
+        .widget {
+            background-color: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            text-align: center; /* Center content for sensor status */
+        }
+        .widget h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .widget .sensor-value {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .widget .sensor-status {
+            font-size: 16px;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: inline-block; /* To make padding/background work */
+        }
+        .sensor-status.normal { background-color: #e6f7ed; color: #2ecc71; } /* Green */
+        .sensor-status.warning { background-color: #fffbe6; color: #f1c40f; } /* Yellow */
+        .sensor-status.critical { background-color: #fdeded; color: #e74c3c; } /* Red */
+        .widget .description {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .widget .action-button {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            cursor: pointer; /* Add cursor pointer to indicate it's clickable */
+        }
+        .widget .action-button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Notifications Widget */
+        .notifications-widget {
+            grid-column: span 2; /* Span two columns for wider display */
+            text-align: left; /* Align text left for list */
+        }
+        .notifications-widget ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .notifications-widget li {
+            padding: 10px 0;
+            border-bottom: 1px dashed #f0f0f0;
+            font-size: 15px;
+            color: #555;
+        }
+        .notifications-widget li:last-child {
+            border-bottom: none;
+        }
+        .notifications-widget li .priority {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .notifications-widget li .priority.critical { color: #e74c3c; }
+        .notifications-widget li .priority.warning { color: #f1c40f; }
+        .notifications-widget li .priority.info { color: #3498db; }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar .nav-links {
+                margin-top: 15px;
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .navbar .nav-links a {
+                margin: 5px 10px;
+            }
+            .navbar .user-info {
+                margin-top: 15px;
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
+            .notifications-widget {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo">Bus Intelligence Core <span class="bus-id-display">#KB001 - PO Maju Mundur</span></div>
+        <nav class="nav-links">
+            <a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="#"><i class="fas fa-cog"></i> Pengaturan Kabin</a>
+            <a href="#"><i class="fas fa-history"></i> Log Aktivitas</a>
+        </nav>
+        <div class="user-info">
+            <div class="notification-icon">
+                <i class="fas fa-bell"></i>
+                <span class="notification-count">2</span> </div>
+            <span>Driver A</span>
+            <div class="avatar">DA</div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1>Kontrol Kabin Bus</h1>
+
+        <section class="widgets-grid">
+            <div class="widget">
+                <h3><i class="fas fa-thermometer-half"></i> Suhu Kabin</h3>
+                <div class="sensor-value" id="currentTemp">24.5°C</div>
+                <div class="sensor-status normal" id="tempStatus">Normal</div>
+                <div class="description">Suhu optimal: 22-26°C</div>
+                <a href="#" class="action-button" onclick="adjustTemperature()">Atur AC</a>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fas fa-lightbulb"></i> Cahaya Kabin</h3>
+                <div class="sensor-value" id="lightLevel">Otomatis</div>
+                <div class="sensor-status normal" id="lightStatus">Aktif</div>
+                <div class="description">Status sistem pencahayaan</div>
+                <a href="#" class="action-button" onclick="toggleLight()">Kontrol Lampu</a>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fas fa-video"></i> Status CCTV</h3>
+                <div class="sensor-value" id="cctvStatus">Aktif</div>
+                <div class="sensor-status normal" id="cctvCount">4/4 Kamera</div>
+                <div class="description">Memantau keamanan internal</div>
+                <a href="#" class="action-button">Lihat Rekaman</a>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fas fa-door-open"></i> Pintu Penumpang</h3>
+                <div class="sensor-value" id="passengerDoorStatus">Tertutup</div>
+                <div class="sensor-status normal" id="passengerDoorAlert">Aman</div>
+                <div class="description">Status pintu masuk/keluar</div>
+                <a href="#" class="action-button" onclick="togglePassengerDoor()">Buka/Tutup</a>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fas fa-suitcase-rolling"></i> Pintu Bagasi</h3>
+                <div class="sensor-value" id="luggageDoorStatus">Tertutup</div>
+                <div class="sensor-status normal" id="luggageDoorAlert">Aman</div>
+                <div class="description">Status pintu kompartemen bagasi</div>
+                <a href="#" class="action-button" onclick="toggleLuggageDoor()">Kunci/Buka</a>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fas fa-chair"></i> Okupansi Kursi</h3>
+                <div class="sensor-value" id="seatOccupancy">65%</div>
+                <div class="sensor-status normal" id="seatCount">18/28 Kursi</div>
+                <div class="description">Jumlah penumpang di kabin</div>
+                <a href="#" class="action-button">Detail Okupansi</a>
+            </div>
+
+            <div class="widget notifications-widget">
+                <h3><i class="fas fa-bell"></i> Notifikasi Kabin</h3>
+                <ul id="notificationList">
+                    <li><span class="priority warning">Peringatan:</span> Suhu kabin sedikit meningkat.</li>
+                    <li><span class="priority info">Info:</span> Pintu bagasi telah dibuka.</li>
+                </ul>
+                <a href="#" class="action-button">Lihat Semua</a>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // Function to update temperature
+        function adjustTemperature() {
+            let currentTempElement = document.getElementById('currentTemp');
+            let tempStatusElement = document.getElementById('tempStatus');
+            let currentTemp = parseFloat(currentTempElement.innerText);
+            let newTemp;
+
+            // Simulate temperature adjustment within a reasonable range (e.g., 20-28)
+            if (currentTemp < 22) {
+                newTemp = currentTemp + 0.5 + Math.random();
+            } else if (currentTemp > 26) {
+                newTemp = currentTemp - 0.5 - Math.random();
+            } else {
+                newTemp = 24 + (Math.random() * 4 - 2); // Random change around 24
+            }
+
+            newTemp = Math.max(20, Math.min(28, newTemp)); // Keep within 20-28
+            currentTempElement.innerText = newTemp.toFixed(1) + '°C';
+
+            if (newTemp >= 26) {
+                tempStatusElement.className = 'sensor-status warning';
+                tempStatusElement.innerText = 'Agak Panas';
+            } else if (newTemp < 22) {
+                tempStatusElement.className = 'sensor-status warning';
+                tempStatusElement.innerText = 'Agak Dingin';
+            } else {
+                tempStatusElement.className = 'sensor-status normal';
+                tempStatusElement.innerText = 'Normal';
+            }
+            addLog("Info: Suhu kabin diatur ke " + newTemp.toFixed(1) + "°C.");
+        }
+
+        // Function to toggle light status
+        function toggleLight() {
+            let lightLevelElement = document.getElementById('lightLevel');
+            let lightStatusElement = document.getElementById('lightStatus');
+
+            if (lightLevelElement.innerText === 'Otomatis') {
+                lightLevelElement.innerText = 'Manual';
+                lightStatusElement.innerText = 'Mati';
+                lightStatusElement.className = 'sensor-status critical';
+                addLog("Peringatan: Lampu kabin diatur manual dan dimatikan.");
+            } else if (lightLevelElement.innerText === 'Manual' && lightStatusElement.innerText === 'Mati') {
+                lightLevelElement.innerText = 'Manual';
+                lightStatusElement.innerText = 'Nyala';
+                lightStatusElement.className = 'sensor-status normal';
+                addLog("Info: Lampu kabin diatur manual dan dinyalakan.");
+            } else {
+                lightLevelElement.innerText = 'Otomatis';
+                lightStatusElement.innerText = 'Aktif';
+                lightStatusElement.className = 'sensor-status normal';
+                addLog("Info: Lampu kabin diatur otomatis.");
+            }
+        }
+
+        // Function to toggle passenger door status
+        function togglePassengerDoor() {
+            let doorStatusElement = document.getElementById('passengerDoorStatus');
+            let doorAlertElement = document.getElementById('passengerDoorAlert');
+
+            if (doorStatusElement.innerText === 'Tertutup') {
+                doorStatusElement.innerText = 'Terbuka';
+                doorAlertElement.innerText = 'Terbuka';
+                doorAlertElement.className = 'sensor-status warning';
+                addLog("Peringatan: Pintu penumpang terbuka.");
+            } else {
+                doorStatusElement.innerText = 'Tertutup';
+                doorAlertElement.innerText = 'Aman';
+                doorAlertElement.className = 'sensor-status normal';
+                addLog("Info: Pintu penumpang tertutup.");
+            }
+        }
+
+        // Function to toggle luggage door status
+        function toggleLuggageDoor() {
+            let doorStatusElement = document.getElementById('luggageDoorStatus');
+            let doorAlertElement = document.getElementById('luggageDoorAlert');
+
+            if (doorStatusElement.innerText === 'Tertutup') {
+                doorStatusElement.innerText = 'Terbuka';
+                doorAlertElement.innerText = 'Terbuka';
+                doorAlertElement.className = 'sensor-status warning';
+                addLog("Peringatan: Pintu bagasi terbuka.");
+            } else {
+                doorStatusElement.innerText = 'Tertutup';
+                doorAlertElement.innerText = 'Aman';
+                doorAlertElement.className = 'sensor-status normal';
+                addLog("Info: Pintu bagasi tertutup.");
+            }
+        }
+
+        // Function to add a new log entry
+        function addLog(message, priority = 'info') {
+            const notificationList = document.getElementById('notificationList');
+            const newLog = document.createElement('li');
+            const prioritySpan = document.createElement('span');
+            prioritySpan.className = `priority ${priority}`;
+            prioritySpan.innerText = priority.charAt(0).toUpperCase() + priority.slice(1) + ':'; // Capitalize first letter
+
+            newLog.appendChild(prioritySpan);
+            newLog.innerHTML += message;
+            // Add new log to the top
+            if (notificationList.firstChild) {
+                notificationList.insertBefore(newLog, notificationList.firstChild);
+            } else {
+                notificationList.appendChild(newLog);
+            }
+
+            // Limit logs to a certain number (e.g., 5)
+            while (notificationList.children.length > 5) {
+                notificationList.removeChild(notificationList.lastChild);
+            }
+
+            // Update notification count
+            const notificationCount = document.querySelector('.notification-count');
+            let currentCount = parseInt(notificationCount.innerText);
+            if (priority === 'warning' || priority === 'critical') {
+                notificationCount.innerText = currentCount + 1;
+            }
+        }
+
+        // Simulate random log updates every few seconds
+        const randomLogs = [
+            { message: "Sistem AC melakukan self-check.", priority: "info" },
+            { message: "Sensor kelembaban menunjukkan anomali kecil.", priority: "warning" },
+            { message: "Jaringan CCTV stabil.", priority: "info" },
+            { message: "Deteksi kursi kosong: 2 kursi.", priority: "info" },
+            { message: "Peringatan: Tekanan ban rendah di roda belakang kanan.", priority: "critical" },
+            { message: "Lampu depan otomatis menyala.", priority: "info" },
+            { message: "Pintu darurat telah diperiksa.", priority: "info" },
+            { message: "Koneksi internet bus terputus sementara.", priority: "warning" },
+            { message: "Suhu mesin meningkat, periksa segera!", priority: "critical" }
+        ];
+
+        setInterval(() => {
+            const randomIndex = Math.floor(Math.random() * randomLogs.length);
+            const logEntry = randomLogs[randomIndex];
+            addLog(logEntry.message, logEntry.priority);
+
+            // Simulate changes in other sensor values as well, less frequently
+            if (Math.random() < 0.3) { // 30% chance to update another sensor
+                updateRandomSensor();
+            }
+        }, 8000); // Update logs every 8 seconds
+
+        function updateRandomSensor() {
+            const sensors = ['currentTemp', 'lightLevel', 'seatOccupancy', 'cctvStatus'];
+            const randomSensor = sensors[Math.floor(Math.random() * sensors.length)];
+
+            if (randomSensor === 'currentTemp') {
+                let currentTempElement = document.getElementById('currentTemp');
+                let tempStatusElement = document.getElementById('tempStatus');
+                let currentTemp = parseFloat(currentTempElement.innerText);
+                let change = (Math.random() * 2 - 1); // -1 to 1
+                let newTemp = currentTemp + change;
+                newTemp = Math.max(20, Math.min(28, newTemp));
+                currentTempElement.innerText = newTemp.toFixed(1) + '°C';
+                 if (newTemp >= 26) {
+                    tempStatusElement.className = 'sensor-status warning';
+                    tempStatusElement.innerText = 'Agak Panas';
+                } else if (newTemp < 22) {
+                    tempStatusElement.className = 'sensor-status warning';
+                    tempStatusElement.innerText = 'Agak Dingin';
+                } else {
+                    tempStatusElement.className = 'sensor-status normal';
+                    tempStatusElement.innerText = 'Normal';
+                }
+            } else if (randomSensor === 'lightLevel') {
+                let lightLevelElement = document.getElementById('lightLevel');
+                let lightStatusElement = document.getElementById('lightStatus');
+                const states = [
+                    { level: 'Otomatis', status: 'Aktif', class: 'normal' },
+                    { level: 'Redup', status: 'Aktif', class: 'normal' },
+                    { level: 'Mati', status: 'Tidak Aktif', class: 'warning' }
+                ];
+                const newState = states[Math.floor(Math.random() * states.length)];
+                lightLevelElement.innerText = newState.level;
+                lightStatusElement.innerText = newState.status;
+                lightStatusElement.className = `sensor-status ${newState.class}`;
+            } else if (randomSensor === 'seatOccupancy') {
+                let seatOccupancyElement = document.getElementById('seatOccupancy');
+                let seatCountElement = document.getElementById('seatCount');
+                let totalSeats = 28;
+                let currentOccupancy = parseInt(seatOccupancyElement.innerText);
+                let change = Math.floor(Math.random() * 5 - 2); // -2 to 2
+                let newOccupiedSeats = Math.max(0, Math.min(totalSeats, Math.round(totalSeats * currentOccupancy / 100) + change));
+                let newOccupancy = (newOccupiedSeats / totalSeats * 100).toFixed(0);
+                seatOccupancyElement.innerText = newOccupancy + '%';
+                seatCountElement.innerText = `${newOccupiedSeats}/${totalSeats} Kursi`;
+            } else if (randomSensor === 'cctvStatus') {
+                let cctvStatusElement = document.getElementById('cctvStatus');
+                let cctvCountElement = document.getElementById('cctvCount');
+                const cameraCount = Math.floor(Math.random() * 5); // 0 to 4 cameras active
+                if (cameraCount === 4) {
+                    cctvStatusElement.innerText = 'Aktif';
+                    cctvCountElement.innerText = '4/4 Kamera';
+                    cctvCountElement.className = 'sensor-status normal';
+                } else if (cameraCount >= 2) {
+                    cctvStatusElement.innerText = 'Parsial';
+                    cctvCountElement.innerText = `${cameraCount}/4 Kamera`;
+                    cctvCountElement.className = 'sensor-status warning';
+                    addLog(`Peringatan: Hanya ${cameraCount} dari 4 kamera CCTV aktif.`, 'warning');
+                } else {
+                    cctvStatusElement.innerText = 'Tidak Aktif';
+                    cctvCountElement.innerText = `${cameraCount}/4 Kamera`;
+                    cctvCountElement.className = 'sensor-status critical';
+                    addLog(`Peringatan: Hanya ${cameraCount} dari 4 kamera CCTV aktif.`, 'critical');
+                }
+            }
+        }
+
+        // Initial log updates
+        addLog("Sistem kabin Bus KB001 diinisialisasi.", "info");
+    </script>
+
+</body>
+</html>
